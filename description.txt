@@ -1,0 +1,53 @@
+Also called "Gaps"
+
+- Arranged increasing from 2 to K, left to right
+- Space ends up at the end
+- 2 redeals are allowed
+  - Make this an environment variable
+- Placed card must be the same suit and the next in line
+- The 2 can be placed on any row, so long as it's the first space on the row
+
+---
+- Notes from game suggest that the game is nearly always solvable if redos are allowed.
+  - Consider this as an environment variable(?)
+
+---
+- Menu
+  - auto shuffle
+    - how many games should be played?
+      - provide statistics on each game
+        failed | succeeded, number of redeals
+  - enter shuffle (or read from file)
+
+- If failed,
+  - display deck at the end
+  - output to file
+
+- If successful,
+  - write original shuffle and redeals to file.
+====
+Deck class
+Card struct
+   key
+   suit
+   rank
+Suit enum
+
+• hash of failed
+• save to failed.txt
+• read from failed.txt
+• for each step
+  - compare state to items in failed
+  - if failed, discontinue processing of that state
+
+===
+- randomize deck
+- print deck
+- deck can have overloaded << operator for display
+- deck can have overloaded >> operator for input from file
+- after randomizing a new deck, check to see if it's already present in "failures"
+  - if it is, report it to the console and randomize (shuffle) again
+
+===
+"<d> added to failures file."
+"Failures file now contains <n> entries."
