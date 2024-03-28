@@ -32,6 +32,23 @@ std::pair<int, int> MontanaDeck::get_row_indices(int index)
     return {-1, -1};
 };
 
+std::vector<int> MontanaDeck::find_sequence_break_indices() const
+{
+    std::vector<int> break_indices{};
+
+    for (auto row_start_index : get_row_starting_indices())
+    {
+        std::vector<Card> cards_in_row = get_cards_by_indices(row_start_index, row_start_index + COUNT_PER_ROW - 1);
+        int break_index = get_break_in_sequence(cards_in_row);
+        if (break_index != -1)
+        {
+            break_indices.push_back(row_start_index + break_index);
+        }
+    }
+
+    return break_indices;
+}
+
 bool MontanaDeck::is_first_column(int x)
 {
     std::vector<int> v = get_row_starting_indices();
@@ -91,7 +108,7 @@ std::vector<int> MontanaDeck::find_all_gaps() const
     return spaces;
 }
 
-std::vector<int> MontanaDeck::find_valid_spaces() const
+std::vector<int> MontanaDeck::find_valid_gaps() const
 {
     std::vector<int> valid = {};
     std::vector<int> spaces = find_all_gaps();
@@ -113,6 +130,28 @@ Card MontanaDeck::find_previous_card(int space) const
         return MontanaDeck::get_empty_card();
     }
     return deck.at(space - 1);
+}
+
+Card MontanaDeck::get_previous_card(int index) const
+{
+    if (index < 0)
+    {
+        return MontanaDeck::get_empty_card();
+    }
+    if (index == INDEX_ROW_START_1 || index == INDEX_ROW_START_2 || index == INDEX_ROW_START_3 || index == INDEX_ROW_START_4)
+    {
+        return MontanaDeck::get_empty_card();
+    }
+    return deck.at(index - 1);
+}
+
+Card MontanaDeck::get_next_card(int index) const
+{
+    if (index >= deck.size() - 1)
+    {
+        return MontanaDeck::get_empty_card();
+    }
+    return deck.at(index + 1);
 }
 
 Card MontanaDeck::find_previous_nongap_on_row(int position) const
@@ -148,13 +187,13 @@ Card MontanaDeck::find_next_card(Card prev) const
         prev.value + 1};
 }
 
-std::vector<Card> MontanaDeck::get_prioritized_deuces() const
-{
-    /**
-     * @todo
-     */
-    return std::vector<Card>{};
-}
+// std::vector<Card> MontanaDeck::get_prioritized_deuces() const
+// {
+//     /**
+//      * @todo
+//      */
+//     return std::vector<Card>{};
+// }
 
 int MontanaDeck::get_card_index(Card test) const
 {
@@ -172,21 +211,27 @@ int MontanaDeck::get_card_index(Card test) const
 
 std::vector<std::pair<int, int>> MontanaDeck::find_moves() const
 {
-    std::vector<int> spaces = find_valid_spaces();
+    std::vector<int> gaps = find_valid_gaps();
     std::vector<std::pair<int, int>> moves{};
 
-    for (auto space_index : spaces)
+    for (auto space_index : gaps)
     {
         Card prev = find_previous_card(space_index);
         if (MontanaDeck::is_empty_card(prev))
         {
-            std::cout << "Get deuces" << std::endl;
+            // std::cout << "Get deuces" << std::endl;
             continue;
         }
 
         Card next = find_next_card(prev);
+        if (next.is_ace())
+        {
+            std::cout << "Can't move a gap." << std::endl; // @todo Remove after complete
+            continue;
+        }
+
         int move_index = get_card_index(next);
-        std::cout << "Space: " << space_index << " Move: " << move_index << std::endl;
+        // std::cout << "Space: " << space_index << " Move: " << move_index << std::endl;
         moves.push_back(std::make_pair(space_index, move_index));
     }
 
@@ -206,7 +251,7 @@ bool MontanaDeck::is_goal() const
     std::vector<int> row_starting_indices = get_row_starting_indices();
     for (auto row_start_index : row_starting_indices)
     {
-        std::cout << deck.at(row_start_index + COUNT_PER_ROW - 1).value << std::endl;
+        // std::cout << deck.at(row_start_index + COUNT_PER_ROW - 1).value << std::endl;
         if (deck.at(row_start_index + COUNT_PER_ROW - 1).value != CARD_VALUE_ACE)
         {
             return false;
@@ -227,6 +272,11 @@ bool MontanaDeck::is_goal() const
         }
     }
     return true;
+}
+
+bool MontanaDeck::is_reshufflable() const
+{
+    return reshuffle_count < MAX_RESHUFFLES;
 }
 
 // /**
@@ -327,6 +377,25 @@ int MontanaDeck::get_break_in_sequence(std::vector<Card> cards) const
     return -1;
 }
 
+int MontanaDeck::calculate_total_in_sequence() const
+{
+    int total{0};
+    for (auto row_start_index : get_row_starting_indices())
+    {
+        std::vector<Card> cards_in_row = get_cards_by_indices(row_start_index, row_start_index + COUNT_PER_ROW - 1);
+        int break_index = get_break_in_sequence(cards_in_row);
+        if (break_index == -1)
+        {
+            total += COUNT_PER_ROW;
+        }
+        else
+        {
+            total += break_index;
+        }
+    }
+    return total;
+}
+
 void MontanaDeck::replace_cards(std::queue<Card> replacements)
 {
     int index{0};
@@ -363,20 +432,20 @@ void MontanaDeck::reshuffle()
         }
     }
 
-    std::cout << "Cards to shuffle\n";
-    for (auto card : cards_to_shuffle)
-    {
-        std::cout << card.suit_key << card.card_key << " ";
-    }
-    std::cout << std::endl;
+    // std::cout << "Cards to shuffle\n";
+    // for (auto card : cards_to_shuffle)
+    // {
+    //     std::cout << card.suit_key << card.card_key << " ";
+    // }
+    // std::cout << std::endl;
 
     std::random_shuffle(cards_to_shuffle.begin(), cards_to_shuffle.end());
-    std::cout << "After shuffle\n";
-    for (auto card : cards_to_shuffle)
-    {
-        std::cout << card.suit_key << card.card_key << " ";
-    }
-    std::cout << std::endl;
+    // std::cout << "After shuffle\n";
+    // for (auto card : cards_to_shuffle)
+    // {
+    //     std::cout << card.suit_key << card.card_key << " ";
+    // }
+    // std::cout << std::endl;
 
     display();
 
@@ -388,8 +457,14 @@ void MontanaDeck::reshuffle()
 
     replace_cards(q);
     display();
+
+    reshuffle_count++;
 }
 
+/**
+ * @todo
+ * Remove in favor of insertion operator
+ */
 void MontanaDeck::display() const
 {
     for (auto row_index : get_row_starting_indices())
@@ -400,4 +475,31 @@ void MontanaDeck::display() const
         }
         std::cout << std::endl;
     }
+}
+
+std::string MontanaDeck::get_hash() const
+{
+    std::stringstream ss{};
+    // std::cout << "=== start hash ===" << std::endl;
+    for (auto card : deck)
+    {
+        // std::cout << card.suit_key << card.card_key << card.value << std::endl;
+        ss << card.suit_key << card.card_key;
+    }
+    // std::cout << "=== finish hash ===" << std::endl;
+    // std::cout << "----" << std::endl;
+    return ss.str();
+}
+
+std::ostream &operator<<(std::ostream &os, const MontanaDeck &rhs)
+{
+    for (auto row_index : MontanaDeck::get_row_starting_indices())
+    {
+        for (int i = 0; i < COUNT_PER_ROW; i++)
+        {
+            os << rhs.deck[row_index + i].suit_key << rhs.deck[row_index + i].card_key << " ";
+        }
+        std::cout << std::endl;
+    }
+    return os;
 }

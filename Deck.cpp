@@ -3,6 +3,11 @@
 #include <cstdlib>
 #include "Deck.h"
 
+std::vector<Card> Deck::get_deck() const
+{
+    return deck;
+}
+
 char Deck::get_next_card_key(char card_key)
 {
     if (card_key == 'A')

@@ -28,12 +28,21 @@ struct Card
     {
         return value == CARD_VALUE_ACE;
     };
+    bool is_deuce()
+    {
+        return value == CARD_VALUE_DEUCE;
+    };
+    bool is_king()
+    {
+        return value == CARD_VALUE_KING;
+    };
 };
 
 class Deck
 {
 public:
     std::vector<Card> deck{};
+    // friend std::ostream &operator<<(std::ostream &os, const Deck &rhs);
 
     Deck() = default;
     ~Deck() = default;
@@ -42,6 +51,7 @@ public:
     void shuffle();
     void display() const;
 
+    std::vector<Card> get_deck() const;
     static char get_next_card_key(char card_key);
 };
 
