@@ -38,11 +38,16 @@ struct Card
     };
 };
 
+struct IndexedCard
+{
+    Card card;
+    int index;
+};
+
 class Deck
 {
 public:
     std::vector<Card> deck{};
-    // friend std::ostream &operator<<(std::ostream &os, const Deck &rhs);
 
     Deck() = default;
     ~Deck() = default;

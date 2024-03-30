@@ -7,7 +7,6 @@
 #include <queue>
 #include "Deck.h"
 
-const int MAX_RESHUFFLES{8};
 const int COUNT_PER_ROW = 13;
 const int INDEX_ROW_START_1 = 0;
 const int INDEX_ROW_START_2 = 13;
@@ -57,7 +56,7 @@ public:
     MontanaDeck() = default;
     ~MontanaDeck() = default;
     bool is_goal() const;
-    bool is_reshufflable() const;
+    // bool is_reshufflable() const;
     // bool is_stuck() const;
     void display() const;
     void move(int, int);

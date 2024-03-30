@@ -274,11 +274,6 @@ bool MontanaDeck::is_goal() const
     return true;
 }
 
-bool MontanaDeck::is_reshufflable() const
-{
-    return reshuffle_count < MAX_RESHUFFLES;
-}
-
 // /**
 //  * @todo
 //  * Not sure I need this.
@@ -447,7 +442,7 @@ void MontanaDeck::reshuffle()
     // }
     // std::cout << std::endl;
 
-    display();
+    // display();
 
     std::queue<Card> q;
     for (auto card : cards_to_shuffle)
@@ -456,9 +451,7 @@ void MontanaDeck::reshuffle()
     }
 
     replace_cards(q);
-    display();
-
-    reshuffle_count++;
+    // display();
 }
 
 /**
