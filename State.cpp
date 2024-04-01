@@ -19,7 +19,7 @@ bool State::operator==(const State &rhs) const
           deck_this == deck_rhs);
 }
 
-std::vector<std::pair<int, int>> State::get_history() const
+std::vector<std::pair<IndexedCard, IndexedCard>> State::get_history() const
 {
   return history;
 }
@@ -54,7 +54,7 @@ void State::set_deck_score(int v)
   deck_score = v;
 }
 
-void State::set_history(std::vector<std::pair<int, int>> v)
+void State::set_history(std::vector<std::pair<IndexedCard, IndexedCard>> v)
 {
   history = v;
 }
@@ -64,7 +64,7 @@ void State::set_reshuffles(int v)
   reshuffles = v;
 }
 
-int State::add_to_history(std::pair<int, int> move)
+int State::add_to_history(std::pair<IndexedCard, IndexedCard> move)
 {
   history.push_back(move);
   return history.size();

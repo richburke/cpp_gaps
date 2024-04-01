@@ -1,5 +1,6 @@
 #include <iostream>
 #include <utility>
+#include <functional>
 #include <random> // Only needed for dev
 #include <queue>
 #include <unordered_map>
@@ -190,18 +191,93 @@ MontanaDeck get_healthiest_deck(std::priority_queue<State> &pq)
   return healthiest;
 }
 
-std::ostream &operator<<(std::ostream &os, const std::vector<std::pair<int, int>> &rhs)
+std::pair<IndexedCard, IndexedCard> convert_move_to_indexed_cards(const std::pair<int, int> move, const MontanaDeck &deck)
+{
+  Card current = deck.get_deck()[move.second];
+  Card gap = deck.get_deck()[move.first];
+
+  std::pair<IndexedCard, IndexedCard> indexed_cards{
+      {current, move.second}, {gap, move.first}};
+  return indexed_cards;
+}
+
+// std::ostream &operator<<(std::ostream &os)
+// {
+//   os << "Deck: \n";
+//   for (int i = 0; i < 52; i++)
+//   {
+//     os << rhs.get_deck()[i].suit_key << rhs.get_deck()[i].card_key << " ";
+//     if (MontanaDeck::is_last_column(i))
+//     {
+//       os << "\n";
+//     }
+//   }
+//   return os;
+// }
+
+std::ostream &operator<<(std::ostream &os, const IndexedCard &rhs)
+{
+  os << rhs.card.suit_key << rhs.card.card_key << " (" << std::setw(2) << rhs.index << ")";
+  return os;
+}
+
+std::ostream &operator<<(std::ostream &os, const std::vector<std::pair<IndexedCard, IndexedCard>> &rhs)
 {
   os << "Moves (" << rhs.size() << "): \n";
   for (auto move : rhs)
   {
-    os << "(" << move.first << ", " << move.second << ")\n";
+    os << move.first << " <-> " << move.second << "\n";
   }
+  return os;
+}
+
+/**
+ * @todo
+ * overloaded << operator (os, fnc-streamout)
+ * std::ostream &operator<<(std::ostream &os, const Fnc &rhs) {
+ *  return rhs(os);
+ * }
+ *
+ * stream_out(&fnc)
+ * - fnc, the display function
+ * - returns a function that takes os and the display function
+ * - invoked like...
+ * std::cout << stream_out(fnc)(obj)
+ *
+ * the display function returns os
+ */
+template <typename T>
+auto stream_out(const T &v)
+{
+  return [v](std::function<void(std::ostream &, T)> f)
+  {
+    return [v, f](std::ostream &os)
+    {
+      f(os, v);
+    };
+  };
+}
+
+std::ostream &operator<<(std::ostream &os, std::function<void(std::ostream &)> f)
+{
+  f(os);
   return os;
 }
 
 int main()
 {
+  auto f1 = stream_out<int>(5);
+  auto f2 = ([](std::ostream &os, int v)
+             { os << v; });
+
+  std::cout << f1(f2);
+
+  std::cout << (stream_out<int>(5)([](std::ostream &os, int v)
+                                   { os << v; }));
+
+  std::cout << std::endl;
+
+  exit(0);
   MontanaDeck initial_deck{};
   MontanaDeck updated_deck{};
   std::pair<bool, MontanaDeck> result{false, initial_deck};
@@ -268,7 +344,10 @@ int main()
       }
     }
 
-    move_state.add_to_history(move_state.get_move());
+    move_state.add_to_history(
+        convert_move_to_indexed_cards(
+            move_state.get_move(),
+            move_state.get_deck()));
     for (auto &new_move_state : move_states)
     {
       new_move_state.set_history(move_state.get_history());
