@@ -231,25 +231,10 @@ std::ostream &operator<<(std::ostream &os, const std::vector<std::pair<IndexedCa
   return os;
 }
 
-/**
- * @todo
- * overloaded << operator (os, fnc-streamout)
- * std::ostream &operator<<(std::ostream &os, const Fnc &rhs) {
- *  return rhs(os);
- * }
- *
- * stream_out(&fnc)
- * - fnc, the display function
- * - returns a function that takes os and the display function
- * - invoked like...
- * std::cout << stream_out(fnc)(obj)
- *
- * the display function returns os
- */
 template <typename T>
-auto stream_out(const T &v)
+auto stream_out(std::function<void(std::ostream &, T)> f)
 {
-  return [v](std::function<void(std::ostream &, T)> f)
+  return [f](const T &v)
   {
     return [v, f](std::ostream &os)
     {
@@ -264,20 +249,24 @@ std::ostream &operator<<(std::ostream &os, std::function<void(std::ostream &)> f
   return os;
 }
 
+auto render_history_events = ([](std::ostream &os, const std::vector<std::pair<IndexedCard, IndexedCard>> &rhs)
+                              {
+                   os << "Moves (" << rhs.size() << "): \n";
+                   for (auto move : rhs)
+                   {
+                     os << move.first << " <-> " << move.second << "\n";
+                   } });
+
+auto stream_out_history_events = stream_out<std::vector<std::pair<IndexedCard, IndexedCard>>>(render_history_events);
+
 int main()
 {
-  auto f1 = stream_out<int>(5);
-  auto f2 = ([](std::ostream &os, int v)
-             { os << v; });
+  // auto f1 = stream_out<std::vector<std::pair<IndexedCard, IndexedCard>>>(render)(std::vector<std::pair<IndexedCard, IndexedCard>>{});
+  // std::cout << f1;
+  // std::cout << std::endl;
 
-  std::cout << f1(f2);
+  // exit(0);
 
-  std::cout << (stream_out<int>(5)([](std::ostream &os, int v)
-                                   { os << v; }));
-
-  std::cout << std::endl;
-
-  exit(0);
   MontanaDeck initial_deck{};
   MontanaDeck updated_deck{};
   std::pair<bool, MontanaDeck> result{false, initial_deck};
@@ -358,7 +347,7 @@ int main()
 
   std::cout << "Solved: " << std::boolalpha << is_solved << "\n"
             << updated_deck << "\n"
-            << move_state.get_history() << "\n"
+            << stream_out_history_events(move_state.get_history()) << "\n"
             << "Attempts: " << iterations << "   "
             << "Items remaining in queue: " << pq.size() << "\n"
             << std::endl;
