@@ -9,6 +9,8 @@
 #include <iomanip>
 #include "MontanaDeck.h"
 #include "State.h"
+#include "MoveHistoryEvent.h"
+#include "ReshuffleHistoryEvent.h"
 
 const int MAX_RESHUFFLES{3};
 
@@ -23,6 +25,18 @@ void display(std::priority_queue<T> pq)
     std::cout << elem << " ";
   }
   std::cout << "]" << std::endl;
+}
+
+template <typename T>
+auto stream_out(std::function<void(std::ostream &, T)> f)
+{
+  return [f](const T &v)
+  {
+    return [v, f](std::ostream &os)
+    {
+      f(os, v);
+    };
+  };
 }
 
 int calculate_deck_score(MontanaDeck deck)
@@ -201,20 +215,6 @@ std::pair<IndexedCard, IndexedCard> convert_move_to_indexed_cards(const std::pai
   return indexed_cards;
 }
 
-// std::ostream &operator<<(std::ostream &os)
-// {
-//   os << "Deck: \n";
-//   for (int i = 0; i < 52; i++)
-//   {
-//     os << rhs.get_deck()[i].suit_key << rhs.get_deck()[i].card_key << " ";
-//     if (MontanaDeck::is_last_column(i))
-//     {
-//       os << "\n";
-//     }
-//   }
-//   return os;
-// }
-
 std::ostream &operator<<(std::ostream &os, const IndexedCard &rhs)
 {
   os << rhs.card.suit_key << rhs.card.card_key << " (" << std::setw(2) << rhs.index << ")";
@@ -231,33 +231,21 @@ std::ostream &operator<<(std::ostream &os, const std::vector<std::pair<IndexedCa
   return os;
 }
 
-template <typename T>
-auto stream_out(std::function<void(std::ostream &, T)> f)
-{
-  return [f](const T &v)
-  {
-    return [v, f](std::ostream &os)
-    {
-      f(os, v);
-    };
-  };
-}
-
 std::ostream &operator<<(std::ostream &os, std::function<void(std::ostream &)> f)
 {
   f(os);
   return os;
 }
 
-auto render_history_events = ([](std::ostream &os, const std::vector<std::pair<IndexedCard, IndexedCard>> &rhs)
+auto render_history_events = ([](std::ostream &os, const std::vector<std::unique_ptr<HistoryEvent>> rhs)
                               {
-                   os << "Moves (" << rhs.size() << "): \n";
-                   for (auto move : rhs)
+                   os << "Events (" << rhs.size() << "): \n";
+                   for (auto const &event : rhs)
                    {
-                     os << move.first << " <-> " << move.second << "\n";
+                      event->out(os);
                    } });
 
-auto stream_out_history_events = stream_out<std::vector<std::pair<IndexedCard, IndexedCard>>>(render_history_events);
+auto stream_out_history_events = stream_out<std::vector<std::unique_ptr<HistoryEvent>>>(render_history_events);
 
 int main()
 {
@@ -333,21 +321,22 @@ int main()
       }
     }
 
-    move_state.add_to_history(
-        convert_move_to_indexed_cards(
-            move_state.get_move(),
-            move_state.get_deck()));
-    for (auto &new_move_state : move_states)
-    {
-      new_move_state.set_history(move_state.get_history());
-    }
+    // move_state.add_to_history(std::make_unique<MoveHistoryEvent>(
+    //     convert_move_to_indexed_cards(
+    //         move_state.get_move(),
+    //         move_state.get_deck())));
+    move_state.add_to_history(std::make_unique<MoveHistoryEvent>());
+    // for (auto &new_move_state : move_states)
+    // {
+    //   new_move_state.set_history(move_state.get_history());
+    // }
 
     add_moves(pq, move_states);
   }
 
   std::cout << "Solved: " << std::boolalpha << is_solved << "\n"
             << updated_deck << "\n"
-            << stream_out_history_events(move_state.get_history()) << "\n"
+            // << stream_out_history_events(move_state.get_history()) << "\n"
             << "Attempts: " << iterations << "   "
             << "Items remaining in queue: " << pq.size() << "\n"
             << std::endl;

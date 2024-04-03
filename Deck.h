@@ -2,6 +2,8 @@
 #define _DECK_H_
 #include <string>
 #include <vector>
+#include <iostream>
+#include <iomanip>
 
 const int CARD_VALUE_ACE = 1;
 const int CARD_VALUE_DEUCE = 2;
@@ -42,6 +44,11 @@ struct IndexedCard
 {
     Card card;
     int index;
+    std::ostream &out(std::ostream &os) const
+    {
+        os << card.suit_key << card.card_key << " (" << std::setw(2) << index << ")";
+        return os;
+    };
 };
 
 class Deck

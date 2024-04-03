@@ -2,6 +2,7 @@
 #include <sstream>
 #include <vector>
 #include <string>
+#include "HistoryEvent.h"
 #include "MontanaDeck.h"
 
 /**
@@ -14,7 +15,7 @@ class State
 
 private:
   MontanaDeck deck{}; // State of deck prior to move
-  std::vector<std::pair<IndexedCard, IndexedCard>> history{};
+  std::vector<std::unique_ptr<HistoryEvent>> history{};
   std::pair<int, int> move{0, 0};
   int deck_score{0};
   int score{0};
@@ -28,14 +29,14 @@ public:
   bool operator<(const State &rhs) const;
   bool operator==(const State &rhs) const;
 
-  std::vector<std::pair<IndexedCard, IndexedCard>> get_history() const;
+  // std::vector<std::unique_ptr<HistoryEvent>> get_history() const;
   std::pair<int, int> get_move() const;
   MontanaDeck get_deck() const;
   int get_score() const;
   int get_reshuffles() const;
   void set_deck(MontanaDeck v);
-  void set_history(std::vector<std::pair<IndexedCard, IndexedCard>> v);
+  // void set_history(std::vector<std::unique_ptr<HistoryEvent>> v);
   void set_reshuffles(int v);
   void set_deck_score(int v);
-  int add_to_history(std::pair<IndexedCard, IndexedCard> move);
+  int add_to_history(std::unique_ptr<HistoryEvent> event);
 };
