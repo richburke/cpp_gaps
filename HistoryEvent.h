@@ -25,7 +25,6 @@ public:
   HistoryEvent(HistoryEvent &rhs) = default;
   HistoryEvent(HistoryEvent &&rhs) = default;
 
-  // virtual void out(std::ostream &os) const;
   virtual void out(std::ostream &os) const
   {
     os << "Fix! Not calling derived out() methods!\n";

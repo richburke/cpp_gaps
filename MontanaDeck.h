@@ -37,7 +37,6 @@ class MontanaDeck : public Deck
 private:
     int reshuffle_count{0};
     int get_card_index(Card card) const;
-    // std::vector<Card> get_prioritized_deuces() const;
     static Card get_empty_card();
     static bool is_empty_card(Card card);
     static std::pair<int, int> get_row_indices(int index);
@@ -56,8 +55,6 @@ public:
     MontanaDeck() = default;
     ~MontanaDeck() = default;
     bool is_goal() const;
-    // bool is_reshufflable() const;
-    // bool is_stuck() const;
     void display() const;
     void move(int, int);
     std::vector<std::pair<int, int>> find_moves() const;

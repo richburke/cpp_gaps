@@ -115,15 +115,8 @@ int calculate_score(MontanaDeck deck, std::pair<int, int> move)
   }
 
   return score;
-  /**
-   * - determine the state of the move
-   *   - moving a card to close to its proper sequence gets proportionally higher value
-   *   - moving a card to a space away from its proper sequence gets a proportionally lower value
-   *   - moving a card to its proper suit gets a somewhat high value
-   * */
 }
 
-// bool does_state_exist_in_queue(std::priority_queue<Move, std::vector<Move>, compare> pq, Move &move)
 bool does_state_exist_in_queue(std::priority_queue<State> pq, State &state)
 {
   while (!pq.empty())
@@ -191,6 +184,9 @@ MontanaDeck get_healthiest_deck(std::priority_queue<State> &pq)
   auto healthiest = pq.top().get_deck();
   int health_score{-10000};
 
+  std::cout << "healthiest " << pq.size() << "\n"
+            << healthiest << std::endl;
+
   while (!pq.empty())
   {
     auto test_deck = pq.top().get_deck();
@@ -221,23 +217,13 @@ std::ostream &operator<<(std::ostream &os, const IndexedCard &rhs)
   return os;
 }
 
-std::ostream &operator<<(std::ostream &os, const std::vector<std::pair<IndexedCard, IndexedCard>> &rhs)
-{
-  os << "Moves (" << rhs.size() << "): \n";
-  for (auto move : rhs)
-  {
-    os << move.first << " <-> " << move.second << "\n";
-  }
-  return os;
-}
-
 std::ostream &operator<<(std::ostream &os, std::function<void(std::ostream &)> f)
 {
   f(os);
   return os;
 }
 
-auto render_history_events = ([](std::ostream &os, const std::vector<std::unique_ptr<HistoryEvent>> rhs)
+auto render_history_events = ([](std::ostream &os, const std::vector<std::shared_ptr<HistoryEvent>> rhs)
                               {
                    os << "Events (" << rhs.size() << "): \n";
                    for (auto const &event : rhs)
@@ -245,16 +231,10 @@ auto render_history_events = ([](std::ostream &os, const std::vector<std::unique
                       event->out(os);
                    } });
 
-auto stream_out_history_events = stream_out<std::vector<std::unique_ptr<HistoryEvent>>>(render_history_events);
+auto stream_out_history_events = stream_out<std::vector<std::shared_ptr<HistoryEvent>>>(render_history_events);
 
 int main()
 {
-  // auto f1 = stream_out<std::vector<std::pair<IndexedCard, IndexedCard>>>(render)(std::vector<std::pair<IndexedCard, IndexedCard>>{});
-  // std::cout << f1;
-  // std::cout << std::endl;
-
-  // exit(0);
-
   MontanaDeck initial_deck{};
   MontanaDeck updated_deck{};
   std::pair<bool, MontanaDeck> result{false, initial_deck};
@@ -263,19 +243,15 @@ int main()
   std::vector<State> move_states{};
   State move_state{};
   bool is_solved{false};
+  int iterations{0};
 
   initial_deck.initialize();
   initial_deck.shuffle();
-  /**
-   * @todo
-   * Duplicated here and in while. Create a function.
-   */
+
   hm[initial_deck.get_hash()] = true;
   move_states = determine_moves(initial_deck, pq);
   add_moves(pq, move_states);
-  /** */
 
-  int iterations{0};
   while (pq.size() != 0)
   {
     iterations++;
@@ -294,12 +270,20 @@ int main()
     }
 
     move_state.set_deck_score(calculate_deck_score(updated_deck));
+    std::shared_ptr<MoveHistoryEvent> sptr_move_event = std::make_shared<MoveHistoryEvent>();
+    sptr_move_event->set_move(convert_move_to_indexed_cards(
+        move_state.get_move(),
+        move_state.get_deck()));
+    move_state.add_to_history(sptr_move_event);
 
     initial_deck.display();
     std::cout << "=== " << std::setw(6) << pq.size() << " ===" << std::setw(10) << iterations << " ===" << std::setw(3) << move_state.get_reshuffles() << " ===" << std::endl;
     updated_deck.display();
     std::cout << "---" << std::endl;
-    get_healthiest_deck(pq).display();
+    if (pq.size() > 0)
+    {
+      get_healthiest_deck(pq).display();
+    }
     std::cout << std::endl;
 
     hm[updated_deck.get_hash()] = true;
@@ -311,9 +295,15 @@ int main()
         State s{};
         s.set_reshuffles(move_state.get_reshuffles() + 1);
         updated_deck.reshuffle();
+
         s.set_deck(updated_deck);
         move_states.push_back(s);
-        std::cout << "RESHUFFLING" << std::endl;
+
+        std::shared_ptr<ReshuffleHistoryEvent> reshuffle_event = std::make_shared<ReshuffleHistoryEvent>();
+        reshuffle_event->set_reshuffle_count(move_state.get_reshuffles() + 1);
+        reshuffle_event->set_initial_deck(move_state.get_deck());
+        reshuffle_event->set_reshuffled_deck(updated_deck);
+        move_state.add_to_history(reshuffle_event);
       }
       else
       {
@@ -321,22 +311,17 @@ int main()
       }
     }
 
-    // move_state.add_to_history(std::make_unique<MoveHistoryEvent>(
-    //     convert_move_to_indexed_cards(
-    //         move_state.get_move(),
-    //         move_state.get_deck())));
-    move_state.add_to_history(std::make_unique<MoveHistoryEvent>());
-    // for (auto &new_move_state : move_states)
-    // {
-    //   new_move_state.set_history(move_state.get_history());
-    // }
+    for (auto &new_move_state : move_states)
+    {
+      new_move_state.set_history(move_state.get_history());
+    }
 
     add_moves(pq, move_states);
   }
 
   std::cout << "Solved: " << std::boolalpha << is_solved << "\n"
             << updated_deck << "\n"
-            // << stream_out_history_events(move_state.get_history()) << "\n"
+            << stream_out_history_events(move_state.get_history()) << "\n"
             << "Attempts: " << iterations << "   "
             << "Items remaining in queue: " << pq.size() << "\n"
             << std::endl;

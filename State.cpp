@@ -19,10 +19,10 @@ bool State::operator==(const State &rhs) const
           deck_this == deck_rhs);
 }
 
-// std::vector<std::unique_ptr<HistoryEvent>> State::get_history() const
-// {
-//   return history;
-// }
+std::vector<std::shared_ptr<HistoryEvent>> State::get_history() const
+{
+  return history;
+}
 
 std::pair<int, int> State::get_move() const
 {
@@ -54,17 +54,17 @@ void State::set_deck_score(int v)
   deck_score = v;
 }
 
-// void State::set_history(std::vector<std::unique_ptr<HistoryEvent>> v)
-// {
-//   history = v;
-// }
+void State::set_history(std::vector<std::shared_ptr<HistoryEvent>> v)
+{
+  history = v;
+}
 
 void State::set_reshuffles(int v)
 {
   reshuffles = v;
 }
 
-int State::add_to_history(std::unique_ptr<HistoryEvent> ptr_event)
+int State::add_to_history(std::shared_ptr<HistoryEvent> ptr_event)
 {
   history.push_back(std::move(ptr_event));
   return history.size();
