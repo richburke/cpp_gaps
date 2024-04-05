@@ -222,11 +222,11 @@ std::vector<std::pair<int, int>> MontanaDeck::find_moves() const
         }
 
         int move_index = get_card_index(next);
-        if (move_index == 0)
-        {
-            std::cout << ">>>>" << space_index << move_index << std::endl;
-            continue;
-        }
+        // if (move_index == 0)
+        // {
+        //     std::cout << ">>>>" << space_index << " " << move_index << std::endl;
+        //     continue;
+        // }
         moves.push_back(std::make_pair(space_index, move_index));
     }
 
@@ -368,7 +368,6 @@ void MontanaDeck::reshuffle()
     std::queue<Card> q;
     for (auto card : cards_to_shuffle)
     {
-        std::cout << "reshuffled " << card.suit_key << card.card_key << std::endl;
         q.push(card);
     }
 
@@ -381,13 +380,11 @@ void MontanaDeck::reshuffle()
  */
 void MontanaDeck::display() const
 {
-    std::cout << deck[0].suit_key << deck[0].card_key << std::endl;
-    std::cout << deck[1].suit_key << deck[1].card_key << std::endl;
     for (auto row_index : get_row_starting_indices())
     {
         for (int i = 0; i < COUNT_PER_ROW; i++)
         {
-            std::cout << deck[row_index + i].suit_key << deck[row_index + i].card_key << "[" << std::setw(2) << deck[row_index + i].value << "] ";
+            std::cout << deck[row_index + i].suit_key << deck[row_index + i].card_key << " ";
         }
         std::cout << std::endl;
     }

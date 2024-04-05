@@ -2,7 +2,8 @@
 
 void ReshuffleHistoryEvent::out(std::ostream &os) const
 {
-  os << "Reshuffle (" << reshuffle_count << ")\n"
+  os << "===\n"
+     << "Reshuffle (" << reshuffle_count << ")\n"
      << get_initial_deck()
      << "---\n"
      << get_reshuffled_deck()

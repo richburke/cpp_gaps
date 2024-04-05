@@ -151,6 +151,10 @@ void add_moves(std::priority_queue<State> &pq, std::vector<State> &move_states)
 {
   for (auto move_state : move_states)
   {
+    if (move_state.get_move().first == 0 && move_state.get_move().second == 0)
+    {
+      std::cerr << "Invalid move!! " << move_state.get_move().first << ", " << move_state.get_move().second << std::endl;
+    }
     pq.push(move_state);
   }
 }
@@ -179,13 +183,10 @@ bool can_reshuffle(State move_state)
   return move_state.get_reshuffles() < MAX_RESHUFFLES;
 }
 
-MontanaDeck get_healthiest_deck(std::priority_queue<State> &pq)
+MontanaDeck get_healthiest_deck(std::priority_queue<State> pq)
 {
   auto healthiest = pq.top().get_deck();
   int health_score{-10000};
-
-  std::cout << "healthiest " << pq.size() << "\n"
-            << healthiest << std::endl;
 
   while (!pq.empty())
   {
@@ -201,6 +202,14 @@ MontanaDeck get_healthiest_deck(std::priority_queue<State> &pq)
   return healthiest;
 }
 
+void empty_priority_queue(std::priority_queue<State> &pq)
+{
+  while (!pq.empty())
+  {
+    pq.pop();
+  }
+}
+
 std::pair<IndexedCard, IndexedCard> convert_move_to_indexed_cards(const std::pair<int, int> move, const MontanaDeck &deck)
 {
   Card current = deck.get_deck()[move.second];
@@ -209,6 +218,19 @@ std::pair<IndexedCard, IndexedCard> convert_move_to_indexed_cards(const std::pai
   std::pair<IndexedCard, IndexedCard> indexed_cards{
       {current, move.second}, {gap, move.first}};
   return indexed_cards;
+}
+
+void display_deck_states(MontanaDeck initial_deck, MontanaDeck updated_deck, std::priority_queue<State> pq, State move_state, int iterations)
+{
+  initial_deck.display();
+  std::cout << "=== " << std::setw(6) << pq.size() << " ===" << std::setw(10) << iterations << " ===" << std::setw(3) << move_state.get_reshuffles() << " ===" << std::endl;
+  updated_deck.display();
+  std::cout << "---" << std::endl;
+  if (pq.size() > 0)
+  {
+    get_healthiest_deck(pq).display();
+  }
+  std::cout << std::endl;
 }
 
 std::ostream &operator<<(std::ostream &os, const IndexedCard &rhs)
@@ -245,6 +267,8 @@ int main()
   bool is_solved{false};
   int iterations{0};
 
+  int reshuffle_count{0};
+
   initial_deck.initialize();
   initial_deck.shuffle();
 
@@ -256,6 +280,12 @@ int main()
   {
     iterations++;
     move_state = get_move(pq);
+
+    if (move_state.get_move().first == 0 && move_state.get_move().second == 0)
+    {
+      std::cerr << "Invalid move! " << move_state.get_move().first << ", " << move_state.get_move().second << std::endl;
+    }
+
     updated_deck = make_move(move_state);
 
     if (updated_deck.is_goal())
@@ -274,30 +304,28 @@ int main()
     sptr_move_event->set_move(convert_move_to_indexed_cards(
         move_state.get_move(),
         move_state.get_deck()));
-    move_state.add_to_history(sptr_move_event);
 
-    initial_deck.display();
-    std::cout << "=== " << std::setw(6) << pq.size() << " ===" << std::setw(10) << iterations << " ===" << std::setw(3) << move_state.get_reshuffles() << " ===" << std::endl;
-    updated_deck.display();
-    std::cout << "---" << std::endl;
-    if (pq.size() > 0)
-    {
-      get_healthiest_deck(pq).display();
-    }
-    std::cout << std::endl;
+    move_state.add_to_history(sptr_move_event);
 
     hm[updated_deck.get_hash()] = true;
     move_states = determine_moves(updated_deck, pq);
+
     if (move_states.size() == 0)
     {
       if (can_reshuffle(move_state))
       {
-        State s{};
-        s.set_reshuffles(move_state.get_reshuffles() + 1);
         updated_deck.reshuffle();
 
-        s.set_deck(updated_deck);
-        move_states.push_back(s);
+        std::vector<std::pair<int, int>> possible_moves = updated_deck.find_moves();
+        for (auto move : possible_moves)
+        {
+          State s{move, updated_deck, calculate_score(updated_deck, move)};
+          s.set_reshuffles(move_state.get_reshuffles() + 1);
+          if (!does_state_exist_in_queue(pq, s))
+          {
+            move_states.push_back(s);
+          }
+        }
 
         std::shared_ptr<ReshuffleHistoryEvent> reshuffle_event = std::make_shared<ReshuffleHistoryEvent>();
         reshuffle_event->set_reshuffle_count(move_state.get_reshuffles() + 1);
@@ -316,6 +344,7 @@ int main()
       new_move_state.set_history(move_state.get_history());
     }
 
+    empty_priority_queue(pq);
     add_moves(pq, move_states);
   }
 
